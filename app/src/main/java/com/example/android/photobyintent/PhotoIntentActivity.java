@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.VideoView;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +35,9 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
     private ImageView mImageView;
     private Bitmap mImageBitmap;
+    private VideoView mVideoView;
+    private Uri mVideoUri;
+
 
     private String mCurrentPhotoPath;
 
@@ -63,6 +67,14 @@ public class PhotoIntentActivity extends AppCompatActivity {
                 mTakePicSOnClickListener,
                 MediaStore.ACTION_IMAGE_CAPTURE
         );
+
+
+        Button vidBtn = (Button) findViewById(R.id.btnIntendV);
+        setBtnListenerOrDisable(
+                vidBtn,
+                mTakeVidOnClickListener,
+                MediaStore.ACTION_VIDEO_CAPTURE
+        );
     }
 
     Button.OnClickListener mTakePicOnClickListener =
@@ -78,6 +90,14 @@ public class PhotoIntentActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     dispatchTakePictureIntent(ACTION_TAKE_PHOTO_S);
+                }
+            };
+
+    Button.OnClickListener mTakeVidOnClickListener =
+            new Button.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    dispatchTakeVideoIntent();
                 }
             };
 
@@ -103,6 +123,11 @@ public class PhotoIntentActivity extends AppCompatActivity {
         } // switch
 
         startActivityForResult(takePictureIntent, actionCode);
+    }
+
+    private void dispatchTakeVideoIntent() {
+        Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        startActivityForResult(takeVideoIntent, ACTION_TAKE_VIDEO);
     }
 
     private File createImageFile() throws IOException {
@@ -160,7 +185,7 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
             case ACTION_TAKE_VIDEO: {
                 if (resultCode == RESULT_OK) {
-                    // TODO
+                    handleCameraVideo(data);
                 }
                 break;
             } // ACTION_TAKE_VIDEO
@@ -182,6 +207,15 @@ public class PhotoIntentActivity extends AppCompatActivity {
             mCurrentPhotoPath = null;
         }
     }
+
+    private void handleCameraVideo(Intent intent) {
+        mVideoUri = intent.getData();
+        mVideoView.setVideoURI(mVideoUri);
+        mImageBitmap = null;
+        mVideoView.setVisibility(View.VISIBLE);
+        mImageView.setVisibility(View.INVISIBLE);
+    }
+
 
     private void galleryAddPic() {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
