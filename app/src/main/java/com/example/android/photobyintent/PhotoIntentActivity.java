@@ -5,7 +5,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +16,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class PhotoIntentActivity extends AppCompatActivity {
@@ -26,6 +33,9 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
     private String mCurrentPhotoPath;
 
+    private static final String JPEG_FILE_PREFIX = "IMG_";
+    private static final String JPEG_FILE_SUFFIX = ".jpg";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,7 +43,6 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
         mImageView = (ImageView) findViewById(R.id.imageView1);
         mImageBitmap = null;
-
 
         Button picBtn = (Button) findViewById(R.id.btnIntend);
         setBtnListenerOrDisable(
@@ -71,13 +80,59 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
         switch(actionCode) {
             case ACTION_TAKE_PHOTO_B:
-                // TODO
+                File f = null;
+                try {
+                    f = createImageFile();
+                    mCurrentPhotoPath = f.getAbsolutePath();
+                    Uri photoURI = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider", f);
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    f = null;
+                    mCurrentPhotoPath = null;
+                }
                 break;
             default:
                 break;
         } // switch
 
         startActivityForResult(takePictureIntent, actionCode);
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = JPEG_FILE_PREFIX + timeStamp;
+        File albumF = getAlbumDir();
+        File imageF = File.createTempFile(imageFileName, JPEG_FILE_SUFFIX, albumF);
+        return imageF;
+    }
+
+    private File getAlbumDir() {
+        File storageDir = null;
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            storageDir = getAlbumStorageDir(getString(R.string.album_name));
+            if (storageDir != null) {
+                if (! storageDir.mkdirs()) {
+                    if (! storageDir.exists()){
+                        Log.d("CameraSample", "failed to create directory");
+                        return null;
+                    }
+                }
+            }
+        } else {
+            Log.v(getString(R.string.app_name), "External storage is not mounted READ/WRITE.");
+        }
+        return storageDir;
+    }
+
+    private File getAlbumStorageDir(String albumName) {
+        return new File(
+                Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES
+                ),
+                albumName
+        );
     }
 
     @Override
@@ -116,9 +171,17 @@ public class PhotoIntentActivity extends AppCompatActivity {
     private void handleBigCameraPhoto() {
         Log.d("handleBigCameraPhoto", "Result received.");
         if (mCurrentPhotoPath != null) {
-            // TODO
+            galleryAddPic();
             mCurrentPhotoPath = null;
         }
+    }
+
+    private void galleryAddPic() {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File f = new File(mCurrentPhotoPath);
+        Uri contentUri = Uri.fromFile(f);
+        mediaScanIntent.setData(contentUri);
+        this.sendBroadcast(mediaScanIntent);
     }
 
     /**
