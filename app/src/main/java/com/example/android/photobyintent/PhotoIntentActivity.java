@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -22,7 +23,9 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
     private ImageView mImageView;
     private Bitmap mImageBitmap;
-    
+
+    private String mCurrentPhotoPath;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,6 +34,14 @@ public class PhotoIntentActivity extends AppCompatActivity {
         mImageView = (ImageView) findViewById(R.id.imageView1);
         mImageBitmap = null;
 
+
+        Button picBtn = (Button) findViewById(R.id.btnIntend);
+        setBtnListenerOrDisable(
+                picBtn,
+                mTakePicOnClickListener,
+                MediaStore.ACTION_IMAGE_CAPTURE
+        );
+
         Button picSBtn = (Button) findViewById(R.id.btnIntendS);
         setBtnListenerOrDisable(
                 picSBtn,
@@ -38,6 +49,14 @@ public class PhotoIntentActivity extends AppCompatActivity {
                 MediaStore.ACTION_IMAGE_CAPTURE
         );
     }
+
+    Button.OnClickListener mTakePicOnClickListener =
+            new Button.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    dispatchTakePictureIntent(ACTION_TAKE_PHOTO_B);
+                }
+            };
 
     Button.OnClickListener mTakePicSOnClickListener =
             new Button.OnClickListener() {
@@ -49,6 +68,15 @@ public class PhotoIntentActivity extends AppCompatActivity {
 
     private void dispatchTakePictureIntent(int actionCode) {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        switch(actionCode) {
+            case ACTION_TAKE_PHOTO_B:
+                // TODO
+                break;
+            default:
+                break;
+        } // switch
+
         startActivityForResult(takePictureIntent, actionCode);
     }
 
@@ -57,7 +85,7 @@ public class PhotoIntentActivity extends AppCompatActivity {
         switch (requestCode) {
             case ACTION_TAKE_PHOTO_B: {
                 if (resultCode == RESULT_OK) {
-                    // TODO
+                    handleBigCameraPhoto();
                 }
                 break;
             } // ACTION_TAKE_PHOTO_B
@@ -83,6 +111,14 @@ public class PhotoIntentActivity extends AppCompatActivity {
         mImageBitmap = (Bitmap) extras.get("data");
         mImageView.setImageBitmap(mImageBitmap);
         mImageView.setVisibility(View.VISIBLE);
+    }
+
+    private void handleBigCameraPhoto() {
+        Log.d("handleBigCameraPhoto", "Result received.");
+        if (mCurrentPhotoPath != null) {
+            // TODO
+            mCurrentPhotoPath = null;
+        }
     }
 
     /**
